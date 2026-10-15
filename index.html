@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Каскад контрактів РМУ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #f6f4ef;
+  --card: #ffffff;
+  --ink: #1d2128;
+  --muted: #646b76;
+  --faint: #a3a9b2;
+  --rule: #dcd8cf;
+  --band-a: #ebe7de;
+  --band-b: #e2ddd2;
+  --lane1: #2f5fc4;
+  --lane2: #b0731a;
+  --lane3: #2c8058;
+  --checked-by: #c23c66;
+  --edge: #8d939c;
+  --done: #2c8058;
+  --btn: #1f4fb8; --btn-ink: #ffffff; --btn-hover: #163a8a;
+  --sum-bg: #e8eefb;
+  --shadow: 0 10px 30px rgba(20, 24, 30, .16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15171b; --card: #1f2228; --ink: #e7e9ec; --muted: #9aa1ab; --faint: #5d636c; --rule: #33373f;
+    --band-a: #23262c; --band-b: #2a2e35; --lane1: #7aa2ff; --lane2: #e0a24a; --lane3: #5fc391;
+    --checked-by: #ff7aa0; --edge: #6f7680; --done: #5fc391; --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    --btn: #9db8ff; --btn-ink: #0f1420; --btn-hover: #c3d4ff; --sum-bg: #1d2a45;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15171b; --card: #1f2228; --ink: #e7e9ec; --muted: #9aa1ab; --faint: #5d636c; --rule: #33373f;
+  --band-a: #23262c; --band-b: #2a2e35; --lane1: #7aa2ff; --lane2: #e0a24a; --lane3: #5fc391;
+  --checked-by: #ff7aa0; --edge: #6f7680; --done: #5fc391; --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  --btn: #9db8ff; --btn-ink: #0f1420; --btn-hover: #c3d4ff; --sum-bg: #1d2a45;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
+code { font: 13px "IBM Plex Mono", monospace; background: var(--band-a); padding: 0 4px; border-radius: 3px; }
+.wrap { padding: 0 clamp(16px, 2.5vw, 40px); }
+
+/* --- закріплена вкладка: коротко — лише суть; розгорнуто — чек-лист на половину екрана */
+#panel {
+  position: sticky; top: 0; z-index: 5; height: 55vh; min-height: 300px;
+  display: flex; flex-direction: column; background: var(--card);
+  border-bottom: 1px solid var(--rule); box-shadow: 0 4px 18px rgba(20, 24, 30, .08);
+}
+.tabs { display: flex; align-items: flex-end; gap: 4px; padding-top: 8px; border-bottom: 1px solid var(--rule); background: var(--paper); }
+.tab { font: 600 13px "IBM Plex Sans", system-ui, sans-serif; padding: 7px 16px; border: 1px solid var(--rule); border-bottom: none; border-radius: 8px 8px 0 0; background: var(--card); color: var(--ink); margin-bottom: -1px; }
+.tabs .stamp { margin-left: auto; padding-bottom: 8px; }
+.tabs .fold { margin: 0 0 5px 12px; padding: 3px 10px; }
+.tab { cursor: pointer; }
+#panel.collapsed { height: auto; min-height: 0; }
+#panel.collapsed .phead, #panel.collapsed .pbody { display: none; }
+#panel.collapsed .tabs { border-bottom-color: transparent; }
+#panel.brief { height: auto; min-height: 0; }
+#panel.brief .pbody, #panel.brief .phead .meta, #panel.brief .progress { display: none; }
+.phead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-top: 8px; padding-bottom: 6px; }
+.phead .kicker { font: 500 11.5px "IBM Plex Mono", monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; width: 100%; }
+.phead h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.phead .meta { color: var(--muted); font-size: 13px; }
+.phead .ctrl { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.btn, select { font: 500 13px "IBM Plex Sans", system-ui, sans-serif; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+.btn { font-weight: 600; color: var(--btn-ink); background: var(--btn); border: 1px solid var(--btn); }
+.btn:hover { background: var(--btn-hover); border-color: var(--btn-hover); }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+select { color: var(--ink); background: var(--card); border: 1.5px solid var(--btn); }
+select:hover { border-color: var(--btn-hover); }
+select { max-width: 280px; }
+.progress { font-size: 13px; color: var(--muted); }
+.progress b { color: var(--done); font-weight: 600; }
+.pbody { flex: 1; overflow: auto; padding-top: 2px; padding-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 28px; align-content: start; }
+.col h4 { margin: 8px 0 4px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.col h4.safety { color: var(--lane1); }
+.check { display: flex; gap: 9px; align-items: flex-start; padding: 4px 0; font-size: 14px; line-height: 1.45; cursor: pointer; }
+.check input { margin: 3px 0 0; width: 16px; height: 16px; flex: none; accent-color: var(--done); cursor: pointer; }
+.check.done > span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
+.check .sub { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.col blockquote { margin: 4px 0 2px; padding: 4px 10px; border-left: 3px solid var(--rule); color: var(--muted); font-size: 13px; }
+.col blockquote.msg { border-left-color: var(--lane1); color: var(--ink); background: var(--band-a); border-radius: 0 6px 6px 0; padding: 8px 12px; }
+.chips { margin: 2px 0 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font: 500 11.5px "IBM Plex Sans", system-ui, sans-serif; padding: 1px 8px; border-radius: 99px; border: 1px solid currentColor; }
+.chip.in { color: var(--lane1); }
+.chip.out { color: var(--checked-by); }
+.empty { color: var(--muted); font-size: 14px; max-width: 70ch; }
+.check.plan input { cursor: default; }
+.updated { margin-left: auto; padding-bottom: 8px; font: 500 12px "IBM Plex Mono", monospace; color: var(--muted); }
+body.pub .int, body:not(.pub) .pubonly { display: none !important; }
+
+/* --- сторінка */
+header.top { padding-top: 22px; }
+h1 { font-size: 28px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.01em; }
+.stamp { font: 500 12px "IBM Plex Mono", monospace; color: var(--checked-by); letter-spacing: .04em; text-transform: uppercase; }
+.lede { color: var(--muted); max-width: 80ch; margin: 0 0 16px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 26px; margin: 0 0 16px; padding: 0; list-style: none; }
+.facts li { font-size: 14px; color: var(--muted); }
+.facts b { color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 13px; color: var(--muted); margin-bottom: 10px; align-items: center; }
+.legend svg { vertical-align: middle; margin-right: 6px; }
+.toolbar { display: flex; gap: 12px; align-items: stretch; margin-bottom: 10px; }
+#goal { flex: 1; min-height: 46px; padding: 8px 14px; background: var(--card); border: 1px solid var(--rule); border-left: 4px solid var(--lane1); border-radius: 8px; font-size: 14px; display: none; align-items: center; }
+#goal.on { display: flex; }
+#goal .ph, #goal .meta { color: var(--muted); }
+#goal .meta { font-size: 12.5px; }
+#toggleTip { margin-left: auto; padding: 8px 14px; white-space: nowrap; }
+.stage-wrap { position: relative; overflow-x: auto; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; }
+#home { position: fixed; bottom: 20px; right: 20px; z-index: 6; padding: 8px 14px; box-shadow: var(--shadow); }
+#home[hidden] { display: none; }
+.stage { cursor: zoom-in; }
+/* --- ступені — окремі вікна: схема й ефекти лише в розробленій першій */
+body:not([data-lane="1"]) .l1only { display: none !important; }
+body:not([data-lane="0"]) .ovonly { display: none !important; }
+/* --- головна карта: усі три ступені разом, відкривається першою */
+#overview { display: block; min-width: 1100px; width: 100%; height: auto; }
+#overview text { font-family: "IBM Plex Sans", system-ui, sans-serif; fill: var(--ink); }
+#overview .mono { font-family: "IBM Plex Mono", monospace; }
+.ov-lane { cursor: pointer; outline: none; }
+.ov-lane .frame { fill: transparent; stroke: transparent; stroke-width: 2; transition: stroke .15s; }
+.ov-lane:hover .frame, .ov-lane:focus-visible .frame { stroke: var(--c); }
+.ov-dot { cursor: pointer; }
+.ov-dot circle { transition: r .12s; }
+.ov-dot:hover circle, .ov-dot:focus-visible circle { r: 9; }
+#toMap { position: fixed; bottom: 20px; right: 20px; z-index: 6; padding: 8px 14px; box-shadow: var(--shadow); }
+body[data-lane="0"] #toMap { display: none; }
+#home { bottom: 66px; }
+.lanes { display: flex; flex-wrap: wrap; gap: 4px; margin: 14px 0 16px; border-bottom: 1px solid var(--rule); }
+.lanes button { font: 600 14px "IBM Plex Sans", system-ui, sans-serif; padding: 8px 16px; border: 1px solid var(--rule); border-bottom: none; border-radius: 8px 8px 0 0; background: var(--paper); color: var(--muted); cursor: pointer; margin-bottom: -1px; }
+.lanes button:hover { color: var(--ink); }
+.lanes button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: inset 0 3px 0 var(--c); }
+.lanes button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.lanes .st { font-weight: 500; font-size: 12px; color: var(--muted); margin-left: 6px; }
+#laneView:empty { display: none; }
+#laneView { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 20px 20px; }
+#laneView .kicker, .handoff .kicker { font: 500 11.5px "IBM Plex Mono", monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+#laneView h2 { margin: 2px 0 4px; font-size: 22px; font-weight: 600; color: var(--c); }
+#laneView h3 { margin: 18px 0 8px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.stub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.stub-cell { border: 1.4px dashed var(--c); border-radius: 8px; background: var(--band-a); padding: 10px 12px; font-size: 13.5px; font-weight: 500; }
+.stub-cell .mono { display: block; font: 400 10.5px "IBM Plex Mono", monospace; color: var(--muted); }
+.handoff { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 12px 0 0; padding: 10px 14px; background: var(--card); border: 1px solid var(--rule); border-left: 4px solid var(--c); border-radius: 0 8px 8px 0; font-size: 14px; }
+.handoff .txt { flex: 1 1 360px; }
+.handoff .txt p { margin: 2px 0; }
+/* --- тексти-зразки з кнопкою копіювання */
+.sample { display: block; margin: 4px 0 6px; }
+.sample blockquote { margin: 0 0 4px !important; color: var(--ink) !important; background: var(--band-a); border-left-color: var(--lane1) !important; border-radius: 0 6px 6px 0; }
+.sample .btn { font-size: 12px; padding: 2px 9px; }
+.phead .sum { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 2px 0 2px; padding: 10px 14px; background: var(--sum-bg); border-left: 4px solid var(--btn); border-radius: 0 8px 8px 0; font-size: 16px; line-height: 1.45; font-weight: 500; color: var(--ink); }
+.phead .sum .lbl { font: 600 11.5px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); width: 100%; }
+.phead .sum .txt { flex: 1 1 320px; }
+#chart { display: block; min-width: 1100px; width: 100%; height: auto; }
+#chart text { font-family: "IBM Plex Sans", system-ui, sans-serif; fill: var(--ink); }
+#chart .mono { font-family: "IBM Plex Mono", monospace; }
+.dot { cursor: pointer; outline: none; }
+.dot circle.core { transition: r .12s; }
+.dot:hover circle.core, .dot:focus circle.core, .dot.active circle.core { r: 10; }
+.dot.selected circle.halo { stroke: var(--lane1); stroke-width: 2; stroke-dasharray: 3 3; }
+.dot:focus-visible circle.halo { stroke: var(--ink); stroke-width: 2; }
+.edge { fill: none; stroke: var(--edge); stroke-width: 1.2; opacity: .35; transition: opacity .15s, stroke .15s; }
+.edge.wide { opacity: .12; }
+.dim .edge { opacity: .06; }
+.dim .dot:not(.active):not(.rel) { opacity: .35; }
+.edge.in { stroke: var(--lane1); stroke-width: 2.2; opacity: 1; }
+.edge.out { stroke: var(--checked-by); stroke-width: 2.2; opacity: 1; }
+.hint { font-size: 13px; color: var(--muted); margin: 10px 2px 0; }
+.fb { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 16px; margin: 12px 0 0; }
+.fb h3 { margin: 0 0 2px; font-size: 15px; }
+.fb h3 span { color: var(--lane1); }
+.fb .note { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.fb .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.fb textarea { flex: 1 1 280px; min-height: 34px; font: 14px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 7px; padding: 5px 9px; resize: vertical; }
+.fb code { font: 12.5px "IBM Plex Mono", ui-monospace, monospace; background: var(--band-a); padding: 1px 5px; border-radius: 4px; }
+.fb .btn[disabled] { opacity: .45; cursor: default; }
+footer { margin: 26px 0 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; }
+
+/* --- контекстне вікно: близько десятої частини екрана */
+#tip {
+  position: fixed; z-index: 10; width: 30vw; min-width: 260px; max-width: calc(100vw - 32px); max-height: 33vh; overflow: auto;
+  background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px;
+  box-shadow: var(--shadow); padding: 14px 16px 12px; font-size: 13.5px; line-height: 1.45;
+  opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .12s, transform .12s;
+}
+#tip.on { opacity: 1; pointer-events: auto; transform: none; }
+#tip .kicker { font: 500 11.5px "IBM Plex Mono", monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+#tip h3 { margin: 2px 0 8px; font-size: 17px; font-weight: 600; }
+#tip dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0 0 8px; }
+#tip dt { color: var(--muted); }
+#tip dd { margin: 0; }
+#tip h4 { margin: 10px 0 3px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+#tip h4.safety { color: var(--lane1); }
+#tip ul { margin: 0; padding-left: 18px; }
+#tip li { margin: 2px 0; }
+#tip li ul { padding-left: 14px; color: var(--muted); }
+#tip blockquote { margin: 4px 0 2px; padding: 4px 10px; border-left: 3px solid var(--rule); color: var(--muted); font-size: 12.5px; }
+#tip blockquote.msg { border-left-color: var(--lane1); color: var(--ink); background: var(--band-a); border-radius: 0 6px 6px 0; }
+#tip .merge { margin: 6px 0 4px; padding: 6px 10px; background: var(--band-a); border-radius: 6px; font-size: 12.5px; }
+#tip .pin { float: right; font-size: 11px; color: var(--faint); }
+@media (max-width: 640px) {
+  .phead { gap: 4px 10px; padding-top: 6px; }
+  .phead h2 { font-size: 16px; }
+  .phead .meta { width: 100%; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .phead .ctrl { margin-left: 0; width: 100%; min-width: 0; }
+  .progress { display: none; }
+  select { flex: 1; min-width: 0; max-width: none; }
+  .pbody { grid-template-columns: minmax(0, 1fr); }
+  .toolbar { flex-direction: column; }
+  #toggleTip { margin-left: 0; }
+}
+</style>
+</head>
+<body data-lane="0">
+<section id="panel" class="l1only" aria-label="Чек-лист операції">
+  <div class="tabs wrap"><span class="tab" id="tabName">Чек-лист</span><span class="stamp int">Внутрішній документ Ради</span><span class="updated pubonly" id="updated"></span><button class="btn fold" id="fold" type="button" aria-controls="panel"></button></div>
+  <div class="phead wrap">
+    <div class="kicker" id="pKicker"></div>
+    <h2 id="pTitle"></h2>
+    <span class="meta" id="pMeta"></span>
+    <div class="ctrl">
+      <span class="progress" id="pProgress"></span>
+      <button class="btn" id="pPrev" type="button" aria-label="Попередня операція">←</button>
+      <select id="pSelect" aria-label="Обрати операцію"></select>
+      <button class="btn" id="pNext" type="button" aria-label="Наступна операція">→</button>
+    </div>
+    <div class="sum"><span class="lbl">Короткий зміст</span><span class="txt" id="pSum"></span><button class="btn" id="more" type="button" aria-controls="pBody"></button></div>
+  </div>
+  <div class="pbody wrap" id="pBody"></div>
+</section>
+
+<main class="wrap">
+  <header class="top">
+    <h1>Каскад контрактів РМУ</h1>
+    <nav class="lanes" id="lanes" role="tablist" aria-label="Ступені року"></nav>
+    <p class="lede int l1only">Рік поділено на три ступені, кожна — у своїй вкладці; розроблено лише першу. Ступінь поділена на сім етапів. Точка — операція: один контракт, одна людина. Клік по точці наближає її разом із сусідніми й відкриває чек-лист у вкладці вгорі; клік по етапу наближає весь етап; наведення показує коротку картку. Дуги показують підстраховку — хто чий матеріал перевіряє.</p>
+    <p class="lede pubonly l1only">Рік поділено на три ступені, кожна — у своїй вкладці; розроблено лише першу. Ступінь поділена на сім етапів. Точка — операція: один контракт, одна людина. Колір точки — стан виконання; клік наближає операцію разом із сусідніми й відкриває її короткий зміст і чек-лист у вкладці вгорі; клік по етапу наближає весь етап. Дуги показують підстраховку — хто чий матеріал перевіряє.</p>
+    <ul class="facts l1only" id="facts"></ul>
+    <div class="legend l1only">
+      <span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="var(--lane1)"/></svg>операція першої ступені</span>
+      <span class="int"><svg width="18" height="18"><circle cx="9" cy="9" r="5" fill="var(--lane1)"/><circle cx="9" cy="9" r="8" fill="none" stroke="var(--lane1)" stroke-width="1.3"/></svg>злита операція</span>
+      <span><svg width="16" height="16"><circle cx="8" cy="8" r="5.5" fill="var(--card)" stroke="var(--lane1)" stroke-width="2"/></svg>не розпочато</span>
+      <span><svg width="18" height="18"><circle cx="9" cy="9" r="5" fill="var(--lane1)"/><path d="M9,2 A7,7 0 0 1 16,9" fill="none" stroke="var(--done)" stroke-width="2.4"/></svg>у роботі</span>
+      <span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="var(--done)"/></svg>виконано</span>
+      <span><svg width="30" height="8"><rect x="1" y="2" width="28" height="4" rx="2" fill="var(--rule)"/><rect x="1" y="2" width="12" height="4" rx="2" fill="var(--done)"/></svg>виконані пункти етапу</span>
+      <span><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="var(--lane1)" stroke-width="2.4"/></svg>що перевіряє ця операція</span>
+      <span><svg width="26" height="10"><line x1="1" y1="5" x2="25" y2="5" stroke="var(--checked-by)" stroke-width="2.4"/></svg>хто перевіряє її</span>
+    </div>
+  </header>
+  <div class="toolbar l1only">
+    <div id="goal" aria-live="polite"></div>
+    <button class="btn" id="toggleTip" type="button">Прибрати контекстне вікно</button>
+  </div>
+  <p class="lede ovonly">Головна карта року: три ступені каскаду разом. Клік по ступені відкриває її робоче вікно; клік по точці — операцію першої ступені з чек-листом. Повернутися сюди — кнопка «До головної карти» праворуч унизу.</p>
+  <div class="legend ovonly">
+    <span><svg width="16" height="16"><circle cx="8" cy="8" r="5.5" fill="var(--card)" stroke="var(--lane1)" stroke-width="2"/></svg>не розпочато</span>
+    <span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="var(--lane1)"/></svg>у роботі</span>
+    <span><svg width="16" height="16"><circle cx="8" cy="8" r="6" fill="var(--done)"/></svg>виконано</span>
+    <span><svg width="30" height="14"><rect x="1" y="1" width="28" height="12" rx="4" fill="var(--band-a)" stroke="var(--lane2)" stroke-width="1.4" stroke-dasharray="4 3"/></svg>ступінь ще не розроблено</span>
+  </div>
+  <div class="stage-wrap ovonly"><svg id="overview" viewBox="0 0 1500 670" role="img" aria-label="Головна карта: три ступені каскаду"></svg></div>
+  <button class="btn" id="toMap" type="button">До головної карти</button>
+  <div class="stage-wrap l1only"><button class="btn" id="home" type="button" hidden>← Уся схема</button><svg id="chart" viewBox="0 0 1500 360" role="img" aria-label="Перша ступінь: операції та зв'язки підстраховки"></svg></div>
+  <section class="fb l1only" id="fb" aria-label="Зворотний зв’язок виконавця">
+    <h3>Зворотний зв’язок <span id="fbOp"></span></h3>
+    <p class="note" id="fbNote"></p>
+    <div class="row">
+      <button class="btn" data-fb="msg" type="button">Скопіювати повідомлення про закриття</button>
+      <button class="btn" data-fb="state" type="button">Скопіювати проміжний стан</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <textarea id="fbHelp" rows="1" placeholder="Що заважає — одне-два речення (для запиту допомоги)"></textarea>
+      <button class="btn" data-fb="help" type="button">Скопіювати запит допомоги</button>
+    </div>
+    <p class="note" style="margin:8px 0 0">Рядок-код наприкінці кожного тексту не прибирай: за ним Рада переносить позначки в план. Зараз: <code id="fbCode">—</code></p>
+  </section>
+  <div id="handoff1"></div>
+  <section id="laneView" aria-live="polite"></section>
+  <p class="hint int l1only">Tab — перехід між точками з клавіатури; Enter — наблизити й відкрити чек-лист; Esc — зняти закріплення й повернутися до всієї схеми. Позначки в чек-листі зберігаються лише в цьому браузері; заблоковані пункти Рада вже позначила виконаними.</p>
+  <p class="hint pubonly l1only">Tab — перехід між точками з клавіатури; Enter — наблизити й відкрити чек-лист операції; Esc — повернутися до всієї схеми. Заблоковані пункти Рада вже позначила виконаними; свої позначки виконавець ставить у чек-листі — вони зберігаються лише в цьому браузері й потрапляють у план через повідомлення в чаті Ради.</p>
+  <footer class="int">Схему зібрано з робочого плану Ради. Кожна ступінь — у своїй вкладці; операції другої й третьої ще не розроблено. Строки відраховують від першого дня школи.</footer>
+  <footer class="pubonly">Схема Ради молодих учених КДПУ оновлюється автоматично в міру виконання плану. Кожна ступінь — у своїй вкладці; операції другої й третьої ще не розроблено. Строки відраховують від першого дня школи.</footer>
+</main>
+<div id="tip" role="tooltip"></div>
+<script>
+const DATA = {"stages": [{"n": 1, "word": "перший", "name": "Ціль", "ops": ["Ціль і формат", "Розподіл контрактів і резерв"]}, {"n": 2, "word": "другий", "name": "Контакти", "ops": ["Майданчик", "Спікери"]}, {"n": 3, "word": "третій", "name": "Медійна підготовка", "ops": ["Оголошення й форма реєстрації", "Поширення оголошення"]}, {"n": 4, "word": "четвертий", "name": "Збір даних і категорії", "ops": ["Закриття реєстрації й категорії"]}, {"n": 5, "word": "п'ятий", "name": "Захід", "ops": ["Навчальні тези", "Групи, явочні листи, нагадування", "Трансляція", "Модерація", "Фотофіксація", "Оцінювання рецензій"]}, {"n": 6, "word": "шостий", "name": "Підведення підсумків", "ops": ["Подяки й текст підсумку", "Виготовлення сертифікатів", "Розсилка сертифікатів", "Публікація підсумку"]}, {"n": 7, "word": "сьомий", "name": "Результат", "ops": ["Ціль — факт і запрошення рецензентів"]}], "ops": {"Ціль і формат": {"id": "Ціль і формат", "title": "Ціль і формат", "ver": "412f", "label": "Ціль", "who": "голова", "when": "за шість тижнів до школи", "gives": "затверджені ціль і формат.", "sum": "Сформулювати ціль року й школи з мінімумом і бажаним результатом, визначити формат двох днів і правило зарахування, затвердити все в чаті Ради.", "checks": [], "total": 6, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Прочитай третє рішення Ради про консервацію попередньої концепції; якщо щось розходиться з пунктами нижче, постав питання в чат до затвердження.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Загальна ціль року: у КДПУ є коло молодих учених, які вміють подати статтю й написати рецензію; школа його готує, конференція другої ступені ним користується.", "sub": [], "done": false}, {"t": "Ціль школи — мінімум і бажаний результат:", "sub": ["зареєструвалися щонайменше п'ятнадцятеро, бажано двадцять п'ять;", "зараховано — тобто виконали обидва завдання — щонайменше восьмеро, бажано п'ятнадцятеро;", "запрошено рецензентами другої ступені щонайменше троє, бажано шестеро."], "done": false}, {"t": "Формат — два дні по чотири години, очно й з онлайн-трансляцією:", "sub": ["перший день, «Подання»: дві лекції по сорок хвилин і перше завдання, «Паспорт журналу»;", "другий день, «Рецензування»: дві лекції по сорок хвилин і друге завдання, «Рецензія на навчальні тези»."], "done": false}, {"t": "Зарахування — обидва завдання здано; сертифікат отримують лише зараховані.", "sub": [], "done": false}, {"t": "Затверди в чаті Ради: якщо впродовж двох робочих днів ніхто не заперечив, це згода.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Ціль і формат — закрито. Формат: два дні, очно й онлайн. Мінімум і ціль: п'ятнадцять і двадцять п'ять зареєстрованих, вісім і п'ятнадцять зарахованих, троє й шестеро рецензентів."]}], "ext": ["рішення про консервацію"]}, "Розподіл контрактів і резерв": {"id": "Розподіл контрактів і резерв", "title": "Розподіл контрактів і резерв", "ver": "fb06", "label": "Розподіл контрактів", "who": "заступник голови", "when": "щойно затверджено ціль", "gives": "аркуш «Контракти», де на кожну операцію є виконавець.", "sum": "Знайти виконавця на кожну операцію за правилами одночасності й підстраховки і стати резервом для операцій, що зависли.", "checks": ["Ціль і формат"], "total": 5, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Операцію «Ціль і формат» затверджено: формат і кількісні орієнтири є; якщо ні — поверни голові.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Аркуш «Контракти» зі стовпцями: операція | виконавець | строк | дата повідомлення | знайдено помилку в чужому.", "sub": [], "done": false}, {"t": "Внеси всі вісімнадцять операцій із карти вище й знайди виконавця на кожну.", "sub": [], "done": false}, {"t": "Перевір правила: «Трансляцію», «Модерацію» й «Фотофіксацію» виконують троє різних людей; ніхто не перевіряє власну операцію (стовпець «Підстраховка перевіряє» на карті).", "sub": [], "done": false}, {"t": "Резерв: ти підхоплюєш будь-яку операцію, повідомлення якої не надійшло до кінця строку; наступного дня пишеш у чат, хто бере її далі.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Розподіл контрактів — закрито. Виконавці є на [скількох] операціях із вісімнадцяти. Без виконавця: [перелік]. Резерв — [ПІБ]."]}], "ext": []}, "Майданчик": {"id": "Майданчик", "title": "Майданчик", "ver": "f77b", "label": "Майданчик", "who": "«Майданчик»", "when": "упродовж тижня після затвердження цілі", "gives": "обидва дні школи з аудиторією й посиланням трансляції.", "sum": "Обрати два дні школи, забронювати аудиторію й створити посилання трансляції.", "checks": ["Ціль і формат"], "total": 5, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Операція «Ціль і формат»: формат (очно й онлайн, два дні по чотири години) і бажані двадцять п'ять учасників — від цього залежить розмір аудиторії.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Обери два суміжні дні за графіком університету: не сесія, не канікули, не збіг із великими заходами.", "sub": [], "done": false}, {"t": "Забронюй на обидва дні аудиторію на тридцять місць із проєктором, мікрофоном і розетками.", "sub": [], "done": false}, {"t": "Створи одне посилання трансляції на обидва дні; запиши, хто в ньому господар.", "sub": [], "done": false}, {"t": "Внеси все в аркуш «Контакти» рядком «Майданчик»: дати, аудиторію, посилання, контакт господаря аудиторії.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Майданчик — закрито. Перший день — [дата], другий — [дата], аудиторія [назва], трансляція [посилання]."]}], "ext": []}, "Спікери": {"id": "Спікери", "title": "Спікери", "ver": "cd8d", "label": "Спікери", "who": "«Спікери»", "when": "за п'ять — чотири тижні до школи", "gives": "четверо спікерів підтвердили письмово.", "sum": "Запросити чотирьох лекторів із шести кандидатів і зібрати від них теми, технічні вимоги й біографії.", "checks": ["Майданчик"], "total": 6, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Операція «Майданчик»: дати й аудиторія внесені в «Контакти» — без них лист не надіслати.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Аркуш «Контакти» зі стовпцями: ім'я | пошта | статус (запрошено / так / ні) | тема | день | біографія.", "sub": [], "done": false}, {"t": "Шестеро кандидатів на чотири місця: редактори й члени редколегій фахових журналів КДПУ, автори зі Scopus чи Web of Science, досвідчені рецензенти.", "sub": [], "done": false}, {"t": "Лист:", "sub": [], "done": false, "quote": ["Шановний(а) [Ім'я По батькові]!", "Рада молодих учених КДПУ проводить Школу молодого науковця «Подання та рецензування у наукових журналах» [дати школи].", "Запрошуємо Вас прочитати сорокахвилинну лекцію «[тема]» у [перший / другий] день.", "Слухачі — аспіранти й молоді вчені; після лекції вони виконують коротке практичне завдання.", "Просимо відповісти до [дата].", "З повагою, [ПІБ], Рада молодих учених КДПУ, [телефон]."]}, {"t": "Якщо три робочі дні немає відповіді — зателефонуй; якщо відмова — пиши наступному кандидатові.", "sub": [], "done": false}, {"t": "Від кожного, хто погодився: точна тема, технічні вимоги, чи можна вести запис, біографія у двох реченнях.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Спікери — закрито. Спікери: [четверо прізвищ і дні]. Біографії — в «Контактах»."]}], "ext": []}, "Оголошення й форма реєстрації": {"id": "Оголошення й форма реєстрації", "title": "Оголошення й форма реєстрації", "ver": "ae7e", "label": "Оголошення", "who": "«Оголошення»", "when": "за місяць до школи", "gives": "текст, афіша й робоча форма, прив'язана до аркуша «Учасники».", "sum": "Створити форму реєстрації, прив'язану до аркуша «Учасники», і написати текст оголошення з афішею.", "checks": ["Майданчик", "Спікери"], "total": 6, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "ПІБ і посади спікерів у «Контактах» (операція «Спікери») збігаються з сайтом їхньої кафедри; дати збігаються з операцією «Майданчик».", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Google-форма, що пише в аркуш «Учасники», з полями:", "sub": ["ПІБ для сертифіката — так, як має бути надруковано; e-mail; кафедра;", "статус: аспірант першого-другого року / аспірант третього-четвертого року / доктор філософії, викладач / інше;", "публікації у фахових виданнях чи Scopus і Web of Science: жодної / одна-дві / три й більше;", "чи рецензували раніше: так / ні;", "участь: очно / онлайн;", "згода на обробку персональних даних для школи й сертифіката — обов'язкове поле;", "згода на фото: так / ні."], "done": false}, {"t": "Стовпці для подальших операцій: Категорія | Перший день | Другий день | Перше завдання | Друге завдання (бал) | Зараховано | Номер сертифіката | Надіслано | Значки.", "sub": [], "done": false}, {"t": "Формули (літери стовпців підстав свої): <code>=IF(G2=\"так\";\"В\";IF(F2=\"жодної\";\"А\";\"Б\"))</code>, <code>=AND(L2=\"так\";M2&gt;=1)</code>.", "sub": [], "done": false}, {"t": "Доступ до таблиці — лише виконавцям контрактів; посилання не публікувати.", "sub": [], "done": false}, {"t": "Текст на сто двадцять — двісті слів і афіша з назвою, датами й лекторами:", "sub": [], "done": false, "quote": ["[Дати школи], [місце] і онлайн.", "<b>Школа молодого науковця: подання та рецензування у наукових журналах</b>", "Два дні практики для аспірантів і молодих учених КДПУ.", "Перший день — як обрати журнал і підготувати подання.", "Другий день — як читати чужий текст і писати рецензію.", "Лектори: [ПІБ, посада кожного з чотирьох].", "Хто виконав обидва практичні завдання, отримує сертифікат; найкращих рецензентів запросимо до студентської конференції.", "Реєстрація — до [дата за три дні до школи]: [посилання на форму].", "Рада молодих учених КДПУ"]}]}, {"name": "Повідомлення", "items": [], "quote": ["Оголошення — закрито. Текст і афіша: [посилання]. Форма: [посилання]."]}], "ext": []}, "Поширення оголошення": {"id": "Поширення оголошення", "title": "Поширення оголошення", "ver": "c4fb", "label": "Поширення", "who": "«Поширення»", "when": "від чотирьох тижнів до трьох днів до школи", "gives": "оголошення щонайменше в трьох каналах.", "sum": "Розмістити оголошення щонайменше в трьох каналах і нагадати про реєстрацію перед її закриттям.", "checks": ["Оголошення й форма реєстрації"], "total": 8, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Текст операції «Оголошення й форма реєстрації»: дати збігаються з операцією «Майданчик», реєстрація закривається за три дні до школи.", "sub": [], "done": false}, {"t": "Подай тестову заявку у форму: якщо вона дійшла в таблицю, напиши виконавцеві «Оголошення», щоб видалив її.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Сайт — через відповідальну особу університету, за тиждень робочих днів до бажаної дати.", "sub": [], "done": false}, {"t": "Facebook Ради.", "sub": [], "done": false}, {"t": "Відділ аспірантури — прохання розіслати аспірантам.", "sub": [], "done": false}, {"t": "Чати кафедр і особисто — науковим керівникам.", "sub": [], "done": false}, {"t": "За півтора тижня до школи — повтор у Facebook: «До кінця реєстрації лишилося [скільки] днів».", "sub": [], "done": false}, {"t": "Посилання на кожну публікацію — в чат.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Поширення — закрито. Опубліковано: [посилання, щонайменше три]. Відділ аспірантури: розіслав / ні."]}], "ext": []}, "Закриття реєстрації й категорії": {"id": "Закриття реєстрації й категорії", "title": "Закриття реєстрації й категорії", "ver": "42d1", "label": "Реєстрація", "who": "«Реєстрація»", "when": "за три — два дні до школи", "gives": "чистий аркуш «Учасники» з категоріями.", "sum": "Закрити форму, очистити список учасників і порахувати їх за категоріями й форматом участі.", "checks": ["Оголошення й форма реєстрації"], "total": 6, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Вручну визнач категорію трьох випадкових учасників і звір із формулою з операції «Оголошення й форма реєстрації».", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "За три дні до школи закрий форму: «Відповіді → Приймати відповіді: ні».", "sub": [], "done": false}, {"t": "Видали дублікати за e-mail (лишай пізнішу заявку) і тестові рядки.", "sub": [], "done": false}, {"t": "Порахуй учасників за категоріями й форматом участі.", "sub": ["А — новачок без публікацій; Б — автор без досвіду рецензування; В — має досвід рецензування."], "done": false}, {"t": "Окремо випиши тих, хто <b>не дав</b> згоди на фото, — для операції «Фотофіксація».", "sub": [], "done": false}, {"t": "Браузерний асистент недоступний (див. «Інструменти»); для обробки скриптом — «Файл → Завантажити → CSV».", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Реєстрація — закрито. Зареєстровано [скільки]: А — [скільки], Б — [скільки], В — [скільки]; очно — [скільки], онлайн — [скільки]. Без згоди на фото: [скільки]."]}], "ext": []}, "Навчальні тези": {"id": "Навчальні тези", "title": "Навчальні тези", "ver": "9591", "label": "Тези", "who": "«Тези»", "when": "за півтора тижня до школи", "gives": "два варіанти тез і ключ дефектів, які підтвердив лектор другого дня.", "sum": "Підготувати два варіанти навчальних тез із навмисними дефектами й ключ, який підтвердив лектор другого дня.", "checks": ["Ціль і формат"], "total": 5, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Операція «Ціль і формат»: тема другого дня й формат другого завдання не змінилися.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Згенеруй два варіанти, щоб сусіди отримали різні, таким запитом:", "sub": ["«Напиши навчальні тези обсягом триста слів з педагогіки українською з п'ятьма навмисними дефектами: мета не відповідає висновкам; немає методу; одне джерело не існує; висновок не випливає з даних; посилання оформлено хибно. Окремо — ключ дефектів.»"], "done": false}, {"t": "Прочитай сам: кожен дефект помітний уважному читачеві, а решта тексту — без випадкових помилок.", "sub": [], "done": false}, {"t": "Надішли лекторові другого дня тези й ключ; він підтверджує, що дефекти справжні.", "sub": [], "done": false}, {"t": "Ключ — лише виконавцям «Модерації» й «Оцінювання рецензій»; учасникам не показувати.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Тези — закрито. Варіанти А і Б: [посилання]. Ключ підтвердив [ПІБ лектора]."]}], "ext": ["лектор другого дня"]}, "Групи, явочні листи, нагадування": {"id": "Групи, явочні листи, нагадування", "title": "Групи, явочні листи, нагадування", "ver": "100b", "label": "Групи", "who": "«Групи»", "when": "за два дні й напередодні школи", "gives": "групи в таблиці, явочні листи надруковано, нагадування надіслано.", "sum": "Розподілити учасників на змішані трійки, надрукувати явочні листи й нагадати про школу напередодні.", "checks": ["Закриття реєстрації й категорії"], "total": 4, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Операція «Закриття реєстрації й категорії»: немає дублікатів і порожніх категорій.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Групи-трійки: відсортуй за категорією й роздавай по колу, щоб А, Б і В опинилися в одній групі; онлайн-учасники — в окремих групах.", "sub": [], "done": false}, {"t": "Явочний лист на кожен день: ПІБ | категорія | група | підпис.", "sub": [], "done": false}, {"t": "Напередодні — нагадування зареєстрованим: «Завтра о [час], [аудиторія] / [посилання]. Візьміть ноутбук і тему своєї статті. Ваша група — [назва].»", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Групи — закрито. Груп: очних — [скільки], онлайн — [скільки]. Нагадувань надіслано: [скільки]."]}], "ext": []}, "Трансляція": {"id": "Трансляція", "title": "Трансляція", "ver": "a5da", "label": "Трансляція", "who": "«Трансляція»", "when": "обидва дні школи", "gives": "обидва дні транслювалися; онлайн-учасників відмічено.", "sum": "Забезпечити онлайн-трансляцію обох днів і відмітити присутність онлайн-учасників.", "checks": ["Майданчик"], "total": 6, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Напередодні відкрий в аудиторії посилання з операції «Майданчик»: звук, проєктор і демонстрація екрана працюють.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "За двадцять хвилин до початку трансляція відкрита, мікрофон лектора перевірено.", "sub": [], "done": false}, {"t": "Презентації спікерів — заздалегідь на ноутбуці аудиторії.", "sub": [], "done": false}, {"t": "Онлайн-групи — в окремих кімнатах на час завдань.", "sub": [], "done": false}, {"t": "Присутність онлайн-учасників — у стовпці «Перший день» і «Другий день».", "sub": [], "done": false}, {"t": "Запис — лише якщо спікер дозволив (операція «Спікери»).", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Трансляція — закрито. Онлайн: першого дня — [скільки], другого — [скільки]. Збої: [немає / опис]."]}], "ext": []}, "Модерація": {"id": "Модерація", "title": "Модерація", "ver": "26ae", "label": "Модератор", "who": "«Модератор»", "when": "обидва дні школи", "gives": "відмітки, перше завдання й усі рецензії — у таблиці й теці того самого дня.", "sum": "Вести обидва дні школи: реєстрація на вході, час лекцій, два практичні завдання й збір їхніх результатів.", "checks": ["Навчальні тези", "Групи, явочні листи, нагадування"], "total": 10, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Явочні листи й групи з операції «Групи, явочні листи, нагадування» надруковано, і вони збігаються з таблицею.", "sub": [], "done": false}, {"t": "Тези з операції «Навчальні тези» надруковано в обох варіантах; ключ не потрапив у роздатковий матеріал.", "sub": [], "done": false}]}, {"name": "Зробити — обидва дні", "items": [{"t": "Реєстрація на вході за явочним листом.", "sub": [], "done": false}, {"t": "Представ спікерів (біографії з «Контактів») і тримай час: сорок хвилин лекція, десять хвилин питання.", "sub": [], "done": false}, {"t": "Кожна група обирає доповідача: дві хвилини на висновок групи.", "sub": [], "done": false}, {"t": "Відмітки — в таблицю в день заходу.", "sub": [], "done": false}]}, {"name": "Перший день", "items": [{"t": "Перше завдання, чверть години: «Паспорт журналу для своєї статті: назва; індексація; вимоги до оформлення; строк рецензування; оплата публікації.»", "sub": ["Усі п'ять рядків заповнено — «так» у стовпці «Перше завдання»."], "done": false}]}, {"name": "Другий день", "items": [{"t": "Роздай тези: сусіди в групі отримують різні варіанти.", "sub": [], "done": false}, {"t": "Друге завдання, пів години: рецензія за рубрикою — мета й актуальність; метод; висновки й дані; джерела й оформлення; мова; рекомендація (прийняти / доопрацювати / відхилити).", "sub": [], "done": false}, {"t": "Збери рецензії з ПІБ; онлайн-рецензії — у спільну теку до кінця дня; передай виконавцеві «Оцінювання рецензій».", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Модерація — закрито. Першого дня присутні [скільки], перше завдання здали [скільки]. Другого дня присутні [скільки], рецензій [скільки], передано [ПІБ виконавця «Оцінювання»]."]}], "ext": []}, "Фотофіксація": {"id": "Фотофіксація", "title": "Фотофіксація", "ver": "2ddf", "label": "Фото", "who": "«Фото»", "when": "обидва дні школи", "gives": "від трьох до дев'яти кадрів у спільній теці.", "sum": "Зробити й відібрати від трьох до дев'яти кадрів обох днів, не знімаючи впізнавано тих, хто не дав згоди.", "checks": ["Закриття реєстрації й категорії"], "total": 4, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Список тих, хто не дав згоди на фото, з операції «Закриття реєстрації й категорії» — з собою; цих людей не знімати впізнавано.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Щодня: одне загальне фото, одне робоче (групи над завданням), один кадр спікера.", "sub": [], "done": false}, {"t": "Відбери найкращі — від трьох до дев'яти — і назви файли «ШМН_День[1/2]_[№]».", "sub": [], "done": false}, {"t": "Теку відкрий лише виконавцеві «Подяк і тексту підсумку».", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Фото — закрито. Кадрів: [скільки]. Тека: [посилання]."]}], "ext": []}, "Оцінювання рецензій": {"id": "Оцінювання рецензій", "title": "Оцінювання рецензій", "ver": "89ca", "label": "Оцінювання", "who": "«Оцінювання»", "when": "від другого дня школи до двох днів після неї", "gives": "бал кожної рецензії в таблиці.", "sum": "Оцінити кожну рецензію за ключем дефектів і внести бали в таблицю.", "checks": ["Модерація"], "total": 4, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Рецензій з операції «Модерація» стільки ж, скільки присутніх другого дня; якщо ні — питання виконавцеві «Модерації».", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Оцінюй за ключем з операції «Навчальні тези»: бал за кожен знайдений дефект — від нуля до п'яти — і ще один за обґрунтовану рекомендацію «доопрацювати»; найвищий бал — шість.", "sub": [], "done": false}, {"t": "Спірний випадок — на користь учасника, з приміткою.", "sub": [], "done": false}, {"t": "Бал — у стовпець «Друге завдання»; «Зараховано» порахує формула.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Оцінювання — закрито. Оцінено [скільки] рецензій; середній бал — [який] із шести; п'ять і більше балів — у [скількох]. Зараховано [скільки]."]}], "ext": []}, "Подяки й текст підсумку": {"id": "Подяки й текст підсумку", "title": "Подяки й текст підсумку", "ver": "50e9", "label": "Підсумок", "who": "«Підсумок»", "when": "перші три дні після школи", "gives": "подяки всім чотирьом спікерам надіслано; текст допису й фото — в чаті.", "sum": "Надіслати подяки спікерам і написати текст допису про підсумки школи.", "checks": ["Модерація", "Фотофіксація"], "total": 5, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Дані про присутніх — з повідомлення «Модерації».", "sub": [], "done": false}, {"t": "Фото з операції «Фотофіксація»: жодної впізнаваної особи зі списку тих, хто не дав згоди.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Першого дня після школи — кожному спікерові окремо:", "sub": [], "done": false, "quote": ["Шановний(а) [Ім'я По батькові]!", "Дякуємо за лекцію «[тема]» у Школі молодого науковця.", "Її слухали [скільки] учасників; [скільки] з них виконали практичне завдання.", "Рада молодих учених КДПУ"]}, {"t": "На третій день після школи — текст допису на сто двадцять — двісті слів; перший рядок — дати й місце; підпис «Рада молодих учених КДПУ».", "sub": [], "done": false}, {"t": "Дані про учасників, зарахованих і лекторів — з повідомлень «Модерації» й «Оцінювання рецензій»; лекторів назви поіменно.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Підсумок — закрито. Подяки надіслано всім чотирьом спікерам. Текст і [скільки] фото: [посилання]."]}], "ext": []}, "Виготовлення сертифікатів": {"id": "Виготовлення сертифікатів", "title": "Виготовлення сертифікатів", "ver": "fb3f", "label": "Сертифікати", "who": "«Сертифікати»", "when": "від другого до четвертого дня після школи", "gives": "PDF на кожного зарахованого.", "sum": "Виготовити іменний сертифікат у PDF для кожного зарахованого учасника.", "checks": ["Оцінювання рецензій"], "total": 6, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "У трьох випадкових рядках звір «Зараховано» з явочними листами й рецензіями.", "sub": [], "done": false}, {"t": "Перевір ПІБ: відмінок, апостроф, латиницю замість кирилиці.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Шаблон — Google Презентації, слайд формату А4:", "sub": ["«Сертифікат № ШМН-[рік]-[NN]. [ПІБ] успішно виконав(ла) програму Школи молодого науковця „Подання та рецензування у наукових журналах“, [дати школи]. Голова Ради молодих учених [ПІБ].» і значки учасника зі стовпця «Значки»."], "done": false}, {"t": "Голова погоджує макет, перш ніж виготовляти решту.", "sub": [], "done": false}, {"t": "На кожного: ПІБ і номер → «Файл → Завантажити → PDF» → «ШМН-[рік]-[NN]_[Прізвище].pdf».", "sub": [], "done": false}, {"t": "Номер — у стовпець «Номер сертифіката»; обсяг у годинах — лише якщо погодив відділ аспірантури.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Сертифікати — закрито. Виготовлено [скільки]. Тека: [посилання]."]}], "ext": []}, "Розсилка сертифікатів": {"id": "Розсилка сертифікатів", "title": "Розсилка сертифікатів", "ver": "6eca", "label": "Розсилка", "who": "«Розсилка»", "when": "від четвертого до шостого дня після школи", "gives": "кожен зарахований отримав свій сертифікат.", "sum": "Надіслати кожному зарахованому його сертифікат окремим листом.", "checks": ["Виготовлення сертифікатів"], "total": 4, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Відкрий кожен PDF з операції «Виготовлення сертифікатів»: ПІБ збігається з рядком у таблиці, номери не повторюються.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Кожному окремий лист, а не спільна розсилка:", "sub": [], "done": false, "quote": ["Тема: Сертифікат Школи молодого науковця", "[Ім'я], дякуємо за участь у Школі молодого науковця «Подання та рецензування у наукових журналах».", "У вкладенні — ваш сертифікат № [NN].", "Рада молодих учених КДПУ"]}, {"t": "Одразу після відправлення — дата в стовпці «Надіслано».", "sub": [], "done": false}, {"t": "Лист повернувся — уточни адресу в учасника й надішли ще раз.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Розсилка — закрито. Надіслано [скільки] з [скількох]; повернулося [скільки], виправлено [скільки]."]}], "ext": []}, "Публікація підсумку": {"id": "Публікація підсумку", "title": "Публікація підсумку", "ver": "ec81", "label": "Публікація", "who": "«Публікація»", "when": "від четвертого до шостого дня після школи", "gives": "допис на сайті й у Facebook.", "sum": "Опублікувати підсумковий допис на сайті університету й на сторінці Ради у Facebook.", "checks": ["Подяки й текст підсумку"], "total": 4, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "Дані в тексті з операції «Подяки й текст підсумку» збігаються з таблицею; заголовок — без великих літер і службових назв.", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Сайт — через відповідальну особу університету.", "sub": [], "done": false}, {"t": "Facebook Ради.", "sub": [], "done": false}, {"t": "Посилання — в чат.", "sub": [], "done": false}]}, {"name": "Повідомлення", "items": [], "quote": ["Публікація — закрито. Сайт: [посилання]. Facebook: [посилання]."]}], "ext": []}, "Ціль — факт і запрошення рецензентів": {"id": "Ціль — факт і запрошення рецензентів", "title": "Ціль — факт і запрошення рецензентів", "ver": "e4d2", "label": "Ціль — факт", "who": "голова", "when": "на дев'ятий день після школи", "gives": "порівняння, статистика, уроки, список рецензентів для другої ступені.", "sum": "Порівняти досягнуте з ціллю, записати уроки й запросити найкращих рецензентів до другої ступені.", "checks": ["Розподіл контрактів і резерв", "Майданчик", "Спікери", "Оголошення й форма реєстрації", "Поширення оголошення", "Закриття реєстрації й категорії", "Навчальні тези", "Групи, явочні листи, нагадування", "Трансляція", "Модерація", "Фотофіксація", "Оцінювання рецензій", "Подяки й текст підсумку", "Виготовлення сертифікатів", "Розсилка сертифікатів", "Публікація підсумку"], "total": 7, "done": 0, "blocks": [{"name": "Підстраховка", "items": [{"t": "В аркуші «Контракти» є повідомлення всіх операцій, крім «Ціль і формат»; якщо якогось немає — з'ясуй чому.", "sub": [], "done": false}, {"t": "Список учасників, що мають п'ять і більше балів, у таблиці збігається з повідомленням «Оцінювання рецензій».", "sub": [], "done": false}]}, {"name": "Зробити", "items": [{"t": "Для трьох показників з операції «Ціль і формат»: показник | мінімум | ціль | факт | досягнуто.", "sub": [], "done": false}, {"t": "За категоріями А, Б і В: частка зарахованих і середній бал за друге завдання.", "sub": ["Якщо А не відстає від В, завдання занадто легке; якщо в А майже ніхто не впорався — занадто складне."], "done": false}, {"t": "Уроки — по рядку: що повторити, що змінити, що прибрати.", "sub": [], "done": false}, {"t": "Значки виконавців — в аркуш «Контракти».", "sub": [], "done": false}, {"t": "Кожному, хто має п'ять і більше балів, окремо:", "sub": [], "done": false, "quote": ["[Ім'я], ваша рецензія в Школі молодого науковця — серед найкращих.", "Запрошуємо вас рецензентом студентської конференції КДПУ: двоє-троє тез за тією самою рубрикою.", "Відповідь — до [дата]."]}]}, {"name": "Повідомлення", "items": [], "quote": ["Школу завершено. Ціль: досягнуто / частково / ні. Зараховано [скільки] з [скількох]; запрошено рецензентів: [скільки]. Уроки: [три рядки]."]}], "ext": []}}, "order": ["Ціль і формат", "Розподіл контрактів і резерв", "Майданчик", "Спікери", "Оголошення й форма реєстрації", "Поширення оголошення", "Закриття реєстрації й категорії", "Навчальні тези", "Групи, явочні листи, нагадування", "Трансляція", "Модерація", "Фотофіксація", "Оцінювання рецензій", "Подяки й текст підсумку", "Виготовлення сертифікатів", "Розсилка сертифікатів", "Публікація підсумку", "Ціль — факт і запрошення рецензентів"], "simultaneous": ["Трансляція", "Модерація", "Фотофіксація"], "public": true, "updated": "2026-10-11"};
+const PUB = !!DATA.public;
+document.body.classList.toggle('pub', PUB);
+if (PUB) {
+  if (DATA.updated) document.getElementById('updated').textContent = 'оновлено ' + DATA.updated.split('-').reverse().join('.');
+}
+const status = o => o.done === 0 ? 'todo' : o.done === o.total ? 'done' : 'doing';
+const STATUS = { todo: 'не розпочато', doing: 'у роботі', done: 'виконано' };
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('chart');
+const tip = document.getElementById('tip');
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+
+// --- числа словами: лише для підсумкового рядка сторінки
+const UNITS_M = ['', 'один', 'два', 'три', 'чотири', "п’ять", 'шість', 'сім', 'вісім', "дев’ять"];
+const UNITS_F = ['', 'одна', 'дві', 'три', 'чотири', "п’ять", 'шість', 'сім', 'вісім', "дев’ять"];
+const TEENS = ['десять', 'одинадцять', 'дванадцять', 'тринадцять', 'чотирнадцять', "п’ятнадцять", 'шістнадцять', 'сімнадцять', 'вісімнадцять', "дев’ятнадцять"];
+const TENS = ['', '', 'двадцять', 'тридцять', 'сорок', "п’ятдесят", 'шістдесят', 'сімдесят', 'вісімдесят', "дев’яносто"];
+function words(n, fem) {
+  const u = fem ? UNITS_F : UNITS_M;
+  if (n === 0) return 'жодного';
+  if (n < 10) return u[n];
+  if (n < 20) return TEENS[n - 10];
+  return (TENS[Math.floor(n / 10)] + ' ' + u[n % 10]).trim();
+}
+function plural(n, one, few, many) {
+  const a = n % 10, b = n % 100;
+  if (a === 1 && b !== 11) return one;
+  if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return few;
+  return many;
+}
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+const el = (tag, attrs = {}, parent = svg) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  parent.appendChild(n);
+  return n;
+};
+const txt = (s, attrs, parent) => { const t = el('text', attrs, parent); t.textContent = s; return t; };
+
+// --- геометрія каскаду
+const VW = 1500, LEFT = 40, STEP = 110, LANE_W = VW - LEFT * 2 - STEP * 2;
+const nOps = DATA.order.length;
+const LANES = [
+  { n: 1, y: 215, color: 'var(--lane1)', title: 'Перша ступінь · Школа молодого науковця', sub: `${words(nOps, true)} ${plural(nOps, 'операція', 'операції', 'операцій')} у семи етапах` },
+  { n: 2, y: 470, color: 'var(--lane2)', title: 'Друга ступінь · Студентська конференція у форматі журналу', sub: 'подання, рецензування, публікація в одному збірнику, без виступів' },
+  { n: 3, y: 630, color: 'var(--lane3)', title: 'Третя ступінь · Автономна система', sub: 'третя ланка каскаду: від конференції до шкіл' },
+];
+LANES.forEach((l, i) => { l.x0 = LEFT + i * STEP; l.x1 = l.x0 + LANE_W; });
+
+const nEdges = DATA.order.reduce((s, id) => s + DATA.ops[id].checks.length, 0);
+const nMerged = Object.values(DATA.ops).filter(o => o.merged).length;
+const nSim = DATA.simultaneous.length;
+const nClosed = DATA.order.filter(id => status(DATA.ops[id]) === 'done').length;
+const nDoing = DATA.order.filter(id => status(DATA.ops[id]) === 'doing').length;
+document.getElementById('facts').innerHTML = [
+  (nClosed === 0 ? '<b>Жодної</b> операції ще не виконано' : `<b>${cap(words(nClosed, true))}</b> ${plural(nClosed, 'операцію', 'операції', 'операцій')} виконано`) + (nDoing ? `, <b>${words(nDoing, true)}</b> у роботі` : ''),
+  `<b>${cap(words(nOps, true))}</b> ${plural(nOps, 'операція', 'операції', 'операцій')} першої ступені`,
+  `<b>Сім</b> етапів у кожній ступені`,
+  `<b>${cap(words(nEdges))}</b> ${plural(nEdges, 'зв’язок', 'зв’язки', 'зв’язків')} підстраховки`,
+  ...(PUB ? [] : [`<b>${cap(words(nMerged, true))}</b> ${plural(nMerged, 'злиття', 'злиття', 'злиттів')}: з двадцяти двох операцій стало ${words(nOps, true)}`]),
+  `<b>${nSim === 3 ? 'Троє' : cap(words(nSim))}</b> людей працюють одночасно в дні школи`,
+].map(s => `<li>${s}</li>`).join('');
+
+const defs = el('defs');
+[['arrIn', 'var(--lane1)'], ['arrOut', 'var(--checked-by)'], ['arrEdge', 'var(--edge)']].forEach(([id, c]) => {
+  const m = el('marker', { id, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, defs);
+  el('path', { d: 'M0,0 L10,5 L0,10 z', fill: c }, m);
+});
+const gBands = el('g'), gEdges = el('g'), gDots = el('g');
+const pos = {};
+const plain = s => { const d = document.createElement('div'); d.innerHTML = s; return d.textContent; };
+
+function wrapRows(s, max) {
+  const rows = [];
+  s.split(' ').forEach(w => {
+    if (rows.length && (rows[rows.length - 1] + ' ' + w).length <= max) rows[rows.length - 1] += ' ' + w;
+    else rows.push(w);
+  });
+  return rows;
+}
+
+// --- масштаб: видима ділянка першої ступені в координатах загальної схеми.
+// Наближення розсуває точки, а не збільшує їх: підписи лишаються читабельними, дуги перераховуються.
+const HOME = { a: LEFT, b: VW - LEFT };
+const view = { ...HOME };
+const X = x => LEFT + (x - view.a) * (VW - 2 * LEFT) / (view.b - view.a);
+const zoomK = () => (HOME.b - HOME.a) / (view.b - view.a);
+const zoomZ = () => Math.max(0, Math.min(1, (zoomK() - 1.3) / 1.7));  // 0 — уся схема, 1 — наближено
+const layoutFns = [];
+const onLayout = f => { layoutFns.push(f); f(); };
+const layout = () => layoutFns.forEach(f => f());
+
+// --- перша ступінь: сім етапів зі смужками виконаних пунктів
+const lane1 = LANES[0];
+txt(lane1.title, { x: lane1.x0, y: 36, 'font-size': 16, 'font-weight': 600, style: `fill:${lane1.color}` }, gBands);
+txt(lane1.sub, { x: lane1.x0, y: 54, 'font-size': 12.5, style: 'fill:var(--muted)' }, gBands);
+const segs1 = DATA.stages.map(s => ({ n: s.n, word: s.word, name: s.name, ops: s.ops, weight: Math.max(s.ops.length, 2) }));
+(() => {
+  const gap = 8, total = segs1.reduce((s, x) => s + x.weight, 0), usable = LANE_W - gap * (segs1.length - 1);
+  let x = lane1.x0;
+  segs1.forEach(seg => { seg.w = usable * seg.weight / total; seg.x = x; x += seg.w + gap; });
+})();
+segs1.forEach((seg, i) => {
+  const g = el('g', { class: 'stage' }, gBands);
+  const rect = el('rect', { y: lane1.y - 18, height: 72, rx: 7, style: `fill:var(${i % 2 ? '--band-b' : '--band-a'})` }, g);
+  const ly = lane1.y + 70;
+  const head = txt(`Етап ${seg.word}`, { y: ly, 'font-size': 10.5, class: 'mono', style: 'fill:var(--muted)' }, g);
+  const rows = wrapRows(seg.name, Math.max(6, Math.floor((seg.w - 12) / 6.6)))
+    .map((r, j) => txt(r, { y: ly + 15 + j * 14, 'font-size': 12, 'font-weight': 500 }, g));
+  const d = seg.ops.reduce((s, id) => s + DATA.ops[id].done, 0), t = seg.ops.reduce((s, id) => s + DATA.ops[id].total, 0);
+  const bg = el('rect', { y: lane1.y + 47, height: 4, rx: 2, style: 'fill:var(--rule)' }, g);
+  const fg = el('rect', { y: lane1.y + 47, height: 4, rx: 2, style: 'fill:var(--done)' }, g);
+  el('title', {}, g).textContent = `Етап ${seg.word}. ${seg.name}: позначено ${words(d)} з ${words(t)} ${plural(t, 'пункту', 'пунктів', 'пунктів')}. Клік — наблизити етап.`;
+  g.addEventListener('click', ev => { ev.stopPropagation(); pinned = null; hide(true); zoomTo(stageView(seg)); bringChart(); });
+  onLayout(() => {
+    const x = X(seg.x), w = X(seg.x + seg.w) - x;
+    rect.setAttribute('x', x); rect.setAttribute('width', Math.max(0, w));
+    head.setAttribute('x', x + 8); rows.forEach(r => r.setAttribute('x', x + 8));
+    bg.setAttribute('x', x + 8); bg.setAttribute('width', Math.max(0, w - 16));
+    fg.setAttribute('x', x + 8); fg.setAttribute('width', Math.max(0, (w - 16) * (t ? d / t : 0)));
+  });
+});
+const line1 = el('line', { y1: lane1.y, y2: lane1.y, style: `stroke:${lane1.color}`, 'stroke-width': 2, opacity: .55 }, gBands);
+onLayout(() => { line1.setAttribute('x1', X(lane1.x0)); line1.setAttribute('x2', X(lane1.x1)); });
+let k0 = 0;
+segs1.forEach(seg => seg.ops.forEach((id, k) => {
+  pos[id] = { x: seg.x + seg.w * (k + .5) / seg.ops.length, y: lane1.y, stage: seg, row: (k0++) % 2 };
+}));
+
+// одночасні операції
+(() => {
+  const y = lane1.y + 108;
+  const p = el('path', { fill: 'none', style: 'stroke:var(--checked-by)', 'stroke-width': 1.3 }, gBands);
+  const t = txt('одночасно — три різні людини', { y: y + 15, 'text-anchor': 'middle', 'font-size': 11.5, style: 'fill:var(--checked-by)' }, gBands);
+  onLayout(() => {
+    const xs = DATA.simultaneous.map(id => X(pos[id].x));
+    const a = Math.min(...xs) - 14, b = Math.max(...xs) + 14;
+    p.setAttribute('d', `M${a},${y - 6} V${y} H${b} V${y - 6}`);
+    t.setAttribute('x', (a + b) / 2);
+  });
+})();
+
+// дуги підстраховки: від перевіреного до того, хто перевіряє
+const edges = [];
+DATA.order.forEach(id => DATA.ops[id].checks.forEach(src => {
+  const p = el('path', { class: 'edge' + (DATA.ops[id].checks.length > 3 ? ' wide' : ''), 'marker-end': 'url(#arrEdge)' }, gEdges);
+  edges.push({ from: src, to: id, p });
+}));
+onLayout(() => edges.forEach(({ from, to, p }) => {
+  const ax = X(pos[from].x), bx = X(pos[to].x), dx = bx - ax, h = Math.min(150, 22 + Math.abs(dx) * .3), y = lane1.y - 9;
+  p.setAttribute('d', `M${ax},${y} C${ax + dx * .2},${y - h} ${bx - dx * .2},${y - h} ${bx},${y}`);
+}));
+
+// --- рендер карток
+const stageOf = id => DATA.stages.find(s => s.ops.includes(id));
+const checkedBy = id => DATA.order.filter(o => DATA.ops[o].checks.includes(id));
+const q = s => `«${s}»`;
+
+function renderOp(id) {
+  const o = DATA.ops[id], st = stageOf(id), by = checkedBy(id);
+  let h = `<span class="pin"></span><div class="kicker">Етап ${st.word}. ${st.name}</div><h3>${o.title}</h3><p style="margin:0 0 8px">${o.sum}</p>
+    <dl><dt>Контракт</dt><dd>${o.who}</dd><dt>Строк</dt><dd>${o.when}</dd><dt>Здає</dt><dd>${o.gives}</dd><dt>Стан</dt><dd>${STATUS[status(o)]} · ${o.done} з ${o.total}</dd></dl>`;
+  if (o.merged) h += `<div class="merge"><b>Злито:</b> ${o.merged.was}.<br>${o.merged.why}.</div>`;
+  const chips = [...o.checks.map(q), ...o.ext].join(', ');
+  if (chips) h += `<h4 class="safety">Підстраховка перевіряє</h4><div>${chips}</div>`;
+  if (by.length) h += `<h4>Цю операцію перевіряє</h4><div>${by.map(q).join(', ')}</div>`;
+  return h;
+}
+
+// --- головна карта: три ступені разом; клік — у робоче вікно ступені
+const ov = document.getElementById('overview');
+const OVY = { 1: 110, 2: 400, 3: 610 };
+let pendingOp = null;
+(() => {
+  const defs = el('defs', {}, ov);
+  [['ovArr2', 'var(--lane2)'], ['ovArr3', 'var(--lane3)']].forEach(([id, c]) => {
+    const m = el('marker', { id, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, defs);
+    el('path', { d: 'M0,0 L10,5 L0,10 z', fill: c }, m);
+  });
+  const open = (g, n, label) => {
+    g.setAttribute('tabindex', 0); g.setAttribute('role', 'link'); g.setAttribute('aria-label', label);
+    g.addEventListener('click', () => { location.hash = '#' + n; });
+    g.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); location.hash = '#' + n; } });
+  };
+  // каскадні переходи — під ступенями
+  const cascade = (x1, y1, x2, y2, color, marker, label) => {
+    const mid = (y1 + y2) / 2, w = label.length * 6.6 + 18;
+    el('path', { d: `M${x1},${y1} C${x1},${mid + 30} ${x2},${mid - 30} ${x2},${y2}`, fill: 'none', style: `stroke:${color}`, 'stroke-width': 2.2, 'stroke-dasharray': '6 4', 'marker-end': `url(#${marker})` }, ov);
+    const lx = Math.max(LEFT + w / 2, Math.min(VW - LEFT - w / 2, x1 * .6 + x2 * .4));
+    el('rect', { x: lx - w / 2, y: mid - 11, width: w, height: 22, rx: 11, style: `fill:var(--card);stroke:${color}` }, ov);
+    txt(label, { x: lx, y: mid + 4, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 500, style: `fill:${color}` }, ov);
+  };
+  const last = pos[DATA.order[DATA.order.length - 1]].x;
+  cascade(last, OVY[1] + 100, LANES[1].x0 + 30, OVY[2] - 92, 'var(--lane2)', 'ovArr2', 'рецензенти: щонайменше троє, бажано шестеро');
+  cascade(LANES[1].x1 - 30, OVY[2] + 56, LANES[2].x0 + 30, OVY[3] - 92, 'var(--lane3)', 'ovArr3', 'від конференції до шкіл');
+
+  LANES.forEach(lane => {
+    const y = OVY[lane.n], g = el('g', { class: 'ov-lane', style: `--c:${lane.color}` }, ov);
+    el('rect', { class: 'frame', x: lane.x0 - 14, y: y - 92, width: LANE_W + 28, height: lane.n === 1 ? 196 : 152, rx: 10 }, g);
+    txt(lane.title, { x: lane.x0, y: y - 66, 'font-size': 17, 'font-weight': 600, style: `fill:${lane.color}` }, g);
+    const sub = lane.n === 1 ? `${lane.sub.split(' · ')[0]} · виконано ${words(nClosed, true)}${nDoing ? `, у роботі ${words(nDoing, true)}` : ''}` : `${lane.sub} · ще не розроблено`;
+    txt(sub, { x: lane.x0, y: y - 46, 'font-size': 12.5, style: 'fill:var(--muted)' }, g);
+    if (lane.n === 1) {
+      segs1.forEach((seg, i) => {
+        el('rect', { x: seg.x, y: y - 22, width: seg.w, height: 44, rx: 7, style: `fill:var(${i % 2 ? '--band-b' : '--band-a'})` }, g);
+        txt(`Етап ${seg.word}`, { x: seg.x + 8, y: y + 40, 'font-size': 10.5, class: 'mono', style: 'fill:var(--muted)' }, g);
+        wrapRows(seg.name, Math.max(6, Math.floor((seg.w - 12) / 6.6))).forEach((r, j) => txt(r, { x: seg.x + 8, y: y + 55 + j * 14, 'font-size': 12, 'font-weight': 500 }, g));
+      });
+      el('line', { x1: lane.x0, x2: lane.x1, y1: y, y2: y, style: `stroke:${lane.color}`, 'stroke-width': 2, opacity: .55 }, g);
+      DATA.order.forEach(id => {
+        const o = DATA.ops[id], st = status(o);
+        const d = el('g', { class: 'ov-dot', tabindex: 0, transform: `translate(${pos[id].x},${y})` }, g);
+        el('circle', { r: 6.5, style: st === 'todo' ? `fill:var(--card);stroke:${lane.color}` : `fill:${st === 'done' ? 'var(--done)' : lane.color};stroke:var(--card)`, 'stroke-width': 2 }, d);
+        el('title', {}, d).textContent = `${o.title} — ${plain(o.sum)} (${STATUS[st]}, ${o.done} з ${o.total}). Клік — відкрити чек-лист.`;
+        const go = ev => { ev.stopPropagation(); pendingOp = id; location.hash = '#1'; };
+        d.addEventListener('click', go);
+        d.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(ev); } });
+      });
+    } else {
+      const cw = LANE_W / DATA.stages.length;
+      el('rect', { x: lane.x0, y: y - 20, width: LANE_W, height: 66, rx: 8, style: `fill:var(--band-a);stroke:${lane.color}`, 'stroke-width': 1.4, 'stroke-dasharray': '5 4' }, g);
+      DATA.stages.forEach((st, i) => {
+        if (i) el('line', { x1: lane.x0 + i * cw, x2: lane.x0 + i * cw, y1: y - 12, y2: y + 38, style: 'stroke:var(--rule)' }, g);
+        txt(`Етап ${st.word}`, { x: lane.x0 + i * cw + 10, y: y - 2, 'font-size': 10.5, class: 'mono', style: 'fill:var(--muted)' }, g);
+        wrapRows(st.name, Math.floor((cw - 16) / 6.6)).forEach((r, j) => txt(r, { x: lane.x0 + i * cw + 10, y: y + 14 + j * 14, 'font-size': 12, style: 'fill:var(--muted)' }, g));
+      });
+    }
+    el('title', {}, g).textContent = `${lane.title} — відкрити робоче вікно ступені`;
+    open(g, lane.n, `${lane.title}: відкрити`);
+  });
+})();
+document.getElementById('toMap').addEventListener('click', ev => { ev.stopPropagation(); location.hash = '#0'; });
+
+// --- ступені: кожна у своєму вікні; друга й третя ще не розроблені
+const lastOp = DATA.order[DATA.order.length - 1];
+const ORD_F = ['Перша', 'Друга', 'Третя'];
+const HANDOFF = {
+  2: { from: 1, kicker: 'Від першої ступені до другої', title: 'Рецензенти для конференції',
+    body: `<p>Операція ${q(lastOp)} запрошує кожного учасника школи, що має за друге завдання п’ять і більше балів, рецензентом студентської конференції: двоє-троє тез за тією самою рубрикою.</p>
+      <p>Орієнтир із цілі школи: щонайменше троє рецензентів, бажано шестеро. Значок «Від слухача до рецензента» — єдиний між ступенями: показує, чи спрацював каскад від школи до конференції.</p>` },
+  3: { from: 2, kicker: 'Від другої ступені до третьої', title: 'Від конференції до шкіл',
+    body: `<p>Під ланку «від конференції до шкіл» розробляють автономну систему. Що саме передається з другої ступені в третю, ще не визначено.</p>` },
+};
+function handoff(n, dir, cls = '') {
+  const h = HANDOFF[n], go = dir === 'out' ? n : h.from;
+  return `<div class="handoff ${cls}" style="--c:${LANES[n - 1].color}"><div class="txt"><div class="kicker">${dir === 'out' ? 'Передає далі' : 'Отримує'} · ${h.kicker}</div><b>${h.title}</b>${h.body}</div>
+    <button class="btn" type="button" data-lane="${go}">${dir === 'out' ? `Відкрити ${ORD_F[go - 1].toLowerCase()} ступінь →` : `← ${ORD_F[go - 1]} ступінь`}</button></div>`;
+}
+const laneTabs = document.getElementById('lanes');
+laneTabs.innerHTML = LANES.map(l => `<button type="button" role="tab" data-lane="${l.n}" style="--c:${l.color}">${l.title.split(' · ')[0]}<span class="st">${l.n === 1 ? l.title.split(' · ')[1] : 'не розроблено'}</span></button>`).join('');
+document.getElementById('handoff1').outerHTML = handoff(2, 'out', 'l1only');
+const laneView = document.getElementById('laneView');
+function renderLane(n) {
+  const l = LANES[n - 1];
+  laneView.style.setProperty('--c', l.color);
+  laneView.innerHTML = `<div class="kicker">${ORD_F[n - 1]} ступінь · не розроблено</div><h2>${l.title.split(' · ')[1]}</h2><p class="lede" style="margin:0">${cap(l.sub)}.</p>
+    <p class="empty">Операції цієї ступені ще не сплановано: схеми й чек-листів поки немає. Ступінь бере сім етапів першої як групи операцій; назви й склад визначить її власний план.</p>
+    <h3>Сім етапів за зразком першої ступені</h3>
+    <div class="stub-grid">${DATA.stages.map(s => `<div class="stub-cell"><span class="mono">Етап ${s.word}</span>${s.name}</div>`).join('')}</div>
+    ${handoff(n, 'in')}${HANDOFF[n + 1] ? handoff(n + 1, 'out') : ''}`;
+}
+function showLane(n) {
+  if (![0, 1, 2, 3].includes(n)) n = 0;
+  document.body.dataset.lane = n;
+  laneTabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(+b.dataset.lane === n)));
+  if (n === 1) { laneView.innerHTML = ''; return; }
+  pinned = null; hide(true);
+  if (zoomed()) zoomTo(HOME);
+  if (n === 0) laneView.innerHTML = ''; else renderLane(n);
+}
+// вікно — у адресі: без неї або #0 — головна карта, #1–#3 — ступені; «Назад» у браузері працює
+const laneFromHash = () => +location.hash.slice(1) || 0;
+addEventListener('hashchange', () => {
+  showLane(laneFromHash()); scrollTo(0, 0);
+  if (pendingOp && laneFromHash() === 1) {
+    // точка з головної карти: одразу операція з чек-листом
+    const id = pendingOp;
+    selectPanel(id); setFolded(false); zoomTo(opView(id)); bringChart();
+  }
+  pendingOp = null;
+});
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-lane]'); if (!b) return;
+  ev.stopPropagation();
+  location.hash = '#' + b.dataset.lane;
+}, true);
+
+// --- точки операцій
+function dot(p, color, opts, render, brief, select) {
+  const g = el('g', { class: 'dot', tabindex: 0 }, gDots);
+  el('circle', { r: 15, fill: 'transparent', class: 'halo' }, g);
+  if (opts.merged && !PUB) el('circle', { r: 11.5, fill: 'none', style: `stroke:${color}`, 'stroke-width': 1.4 }, g);
+  if (opts.status === 'todo') el('circle', { r: 7, class: 'core', style: `fill:var(--card);stroke:${color}`, 'stroke-width': 2 }, g);
+  else if (opts.status === 'done') el('circle', { r: 7.5, class: 'core', style: 'fill:var(--done);stroke:var(--card)', 'stroke-width': 2 }, g);
+  else el('circle', { r: 7.5, class: 'core', style: `fill:${color};stroke:var(--card)`, 'stroke-width': 2 }, g);
+  if (opts.status === 'doing') {
+    const a = 2 * Math.PI * opts.share, r = 12;
+    el('path', { d: `M0,${-r} A${r},${r} 0 ${a > Math.PI ? 1 : 0} 1 ${r * Math.sin(a)},${-r * Math.cos(a)}`, fill: 'none', style: 'stroke:var(--done)', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, g);
+  }
+  const label = txt(opts.label, { 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600 }, g);
+  // у наближенні під підписом з'являється строк; підписи стають в один ряд
+  const when = txt(opts.when, { 'text-anchor': 'middle', 'font-size': 11, style: 'fill:var(--muted)' }, g);
+  onLayout(() => {
+    const z = zoomZ(), ly = 27 + (opts.row ? 15 * (1 - z) : 0);
+    g.setAttribute('transform', `translate(${X(p.x)},${p.y}) scale(${1 + .25 * z})`);
+    label.setAttribute('y', ly);
+    when.setAttribute('y', ly + 14); when.setAttribute('opacity', z);
+  });
+  bindTip(g, render, opts.id, brief, select);
+  g.dataset.key = opts.id;
+  g.addEventListener('focus', () => { if (zoomed() && !inView(opts.id)) zoomTo(opView(opts.id)); });
+  return g;
+}
+DATA.order.forEach(id => {
+  const o = DATA.ops[id];
+  dot(pos[id], 'var(--lane1)', { id, label: o.label, when: plain(o.when), row: pos[id].row, merged: !!o.merged, status: status(o), share: o.done / o.total }, () => renderOp(id),
+    () => `<span><b>${o.title}</b> — ${o.sum} <span class="meta">· ${o.who} · ${o.when} · ${STATUS[status(o)]}</span></span>`,
+    () => { selectPanel(id); zoomTo(opView(id)); bringChart(); });
+});
+
+// --- анімація масштабу
+const homeBtn = document.getElementById('home');
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const zoomed = () => view.b - view.a < HOME.b - HOME.a - 1;
+const inView = id => pos[id].x > view.a && pos[id].x < view.b;
+function opView(id) {
+  // точка в центрі, сусідні — по краях: на екрані лише три точки
+  const i = DATA.order.indexOf(id), x = pos[id].x;
+  const near = [DATA.order[i - 1], DATA.order[i + 1]].filter(Boolean).map(n => Math.abs(pos[n].x - x));
+  const half = Math.max(...near) * 1.5;
+  return { a: x - half, b: x + half };
+}
+function stageView(seg) {
+  const c = seg.x + seg.w / 2, half = Math.max(seg.w / 2 + 4, 160);
+  return { a: c - half, b: c + half };
+}
+let anim = null, tipG = null;
+function zoomTo(target) {
+  cancelAnimationFrame(anim);
+  const c0 = (view.a + view.b) / 2, w0 = view.b - view.a, c1 = (target.a + target.b) / 2, w1 = target.b - target.a;
+  const t0 = performance.now(), dur = RM ? 0 : 700;
+  const ease = s => s < .5 ? 4 * s * s * s : 1 - Math.pow(-2 * s + 2, 3) / 2;
+  homeBtn.hidden = w1 >= HOME.b - HOME.a - 1;
+  const tick = now => {
+    const s = dur ? Math.min(1, (now - t0) / dur) : 1, e = ease(s);
+    const c = c0 + (c1 - c0) * e, w = Math.exp(Math.log(w0) + (Math.log(w1) - Math.log(w0)) * e);  // ширина — в логарифмі: рівномірний масштаб
+    view.a = c - w / 2; view.b = c + w / 2;
+    layout();
+    if (tipG && tip.classList.contains('on')) placeTip(tipG);
+    anim = s < 1 ? requestAnimationFrame(tick) : null;
+  };
+  anim = requestAnimationFrame(tick);
+}
+// після кліку схема стає під вкладкою: дуги над точками не ховаються за нею
+function bringChart() {
+  const r = svg.getBoundingClientRect(), top = r.top + (lane1.y - 175) * r.width / VW;
+  const want = document.getElementById('panel').getBoundingClientRect().bottom + 6;
+  if (Math.abs(top - want) > 4) scrollBy({ top: top - want, behavior: RM ? 'auto' : 'smooth' });
+}
+homeBtn.addEventListener('click', ev => { ev.stopPropagation(); pinned = null; hide(true); zoomTo(HOME); });
+svg.addEventListener('click', ev => { if (!ev.target.closest('.dot, .stage') && zoomed()) zoomTo(HOME); });
+
+// --- вкладка чек-листа
+const pK = document.getElementById('pKicker'), pT = document.getElementById('pTitle'), pM = document.getElementById('pMeta');
+const pB = document.getElementById('pBody'), pP = document.getElementById('pProgress'), pS = document.getElementById('pSelect'), pU = document.getElementById('pSum');
+DATA.stages.forEach(s => {
+  const og = document.createElement('optgroup');
+  og.label = `Етап ${s.word}. ${s.name}`;
+  s.ops.forEach(id => { const o = document.createElement('option'); o.value = id; o.textContent = id; og.appendChild(o); });
+  pS.appendChild(og);
+});
+let current = null;
+// ключ з редакцією чек-листа: після правки плану старі позначки не лягають на інші пункти
+const ckey = (id, b, i) => `chk:${DATA.ops[id].ver || id}:${b}:${i}`;
+const sample = lines => `<span class="sample"><blockquote>${lines.join('<br>')}</blockquote><button class="btn" data-copy="q" type="button">Скопіювати текст</button></span>`;
+
+function checkRow(id, bname, i, it) {
+  if (it.done) return `<label class="check done plan"><input type="checkbox" checked disabled><span>${it.t}</span></label>`;
+  const done = store.get(ckey(id, bname, i)) === '1';
+  const sub = it.sub.length ? `<span class="sub">${it.sub.join('<br>')}</span>` : '';
+  const qt = it.quote ? sample(it.quote) : '';
+  return `<label class="check${done ? ' done' : ''}"><input type="checkbox" data-k="${ckey(id, bname, i)}"${done ? ' checked' : ''}><span>${it.t}${sub}${qt}</span></label>`;
+}
+function updateProgress(id) {
+  const boxes = pB.querySelectorAll('input[type=checkbox]');
+  const n = boxes.length, d = [...boxes].filter(b => b.checked).length;
+  if (!n) { pP.textContent = ''; return; }
+  pP.innerHTML = d === n ? '<b>усе виконано</b>' : d === 0 ? `${words(n)} ${plural(n, 'пункт', 'пункти', 'пунктів')}, ще жодного не позначено`
+    : `позначено <b>${words(d)}</b> · усього ${words(n)}`;
+}
+function checklistText(id) {
+  const o = DATA.ops[id], L = [o.title, `Контракт: ${plain(o.who)} · Строк: ${plain(o.when)} · Здає: ${plain(o.gives)}`, `Суть: ${plain(o.sum)}`];
+  o.blocks.forEach(b => {
+    L.push('', b.name.toUpperCase());
+    if (b.name === 'Підстраховка' && o.checks.length + o.ext.length) L.push('Спершу перевір: ' + [...o.checks.map(q), ...o.ext].join(', '));
+    b.items.forEach(it => {
+      L.push('☐ ' + plain(it.t));
+      it.sub.forEach(s => L.push('   ' + plain(s)));
+      (it.quote || []).forEach(s => L.push('   > ' + plain(s)));
+    });
+    (b.quote || []).forEach(s => L.push(plain(s)));
+  });
+  return L.join('\n');
+}
+function selectPanel(key) {
+  current = key;
+  svg.querySelectorAll('.dot.selected').forEach(d => d.classList.remove('selected'));
+  const g = gDots.querySelector(`[data-key="${CSS.escape(key)}"]`); if (g) g.classList.add('selected');
+  const o = DATA.ops[key], st = stageOf(key), by = checkedBy(key);
+  pK.textContent = `Перша ступінь · Етап ${st.word}. ${st.name}`;
+  pT.textContent = o.title;
+  pM.innerHTML = `${o.who} · ${o.when} · здає: ${o.gives}`;
+  pU.innerHTML = o.sum;
+  pS.value = key;
+  const cols = [];
+  let work = '';
+  o.blocks.forEach(b => {
+    if (b.name === 'Підстраховка') {
+      const chips = [...o.checks.map(c => `<span class="chip in">${q(c)}</span>`), ...o.ext.map(c => `<span class="chip in">${c}</span>`)].join('');
+      cols.push(`<div class="col"><h4 class="safety">Підстраховка — спершу перевір чуже</h4>${chips ? `<div class="chips">${chips}</div>` : ''}${b.items.map((it, i) => checkRow(key, b.name, i, it)).join('')}</div>`);
+    } else if (b.name === 'Повідомлення') {
+      const msg = (b.quote || []).join('<br>');
+      let extra = o.report ? `<h4>У звіт</h4>${sample([o.report])}` : '';
+      if (o.merged) extra += `<h4>Злито</h4><div class="empty">${o.merged.was}. ${o.merged.why}.</div>`;
+      if (by.length) extra += `<h4>Цю операцію перевіряє</h4><div class="chips">${by.map(c => `<span class="chip out">${q(c)}</span>`).join('')}</div>`;
+      cols.push(`<div class="col"><h4>Повідомлення — закриває контракт</h4><blockquote class="msg" id="pMsg">${msg}</blockquote><div class="chips"><button class="btn" data-copy="msg" type="button">Скопіювати повідомлення</button><button class="btn" data-copy="all" type="button">Скопіювати чек-лист</button></div>${extra}</div>`);
+    } else {
+      work += `<h4>${b.name}</h4>${b.items.map((it, i) => checkRow(key, b.name, i, it)).join('')}`;
+    }
+  });
+  cols.splice(1, 0, `<div class="col">${work}</div>`);
+  pB.innerHTML = cols.join('');
+  pB.scrollTop = 0;
+  updateProgress(key);
+  updateFeedback();
+  store.set('panelOp', key);
+}
+
+// --- зворотний зв'язок під схемою: ті самі тексти й коди, що у файлі контракту.
+// Код: РМУ:номер:редакція:по знаку на пункт:вид (+ закрито, ~ стан, ! допомога); формат спільний зі скриптом голови.
+const fbOp = document.getElementById('fbOp'), fbNote = document.getElementById('fbNote'), fbCode = document.getElementById('fbCode'), fbHelp = document.getElementById('fbHelp');
+function bits(id) {
+  const o = DATA.ops[id];
+  return o.blocks.flatMap(b => b.items.map((it, i) => it.done || store.get(ckey(id, b.name, i)) === '1' ? '1' : '0')).join('');
+}
+function fbCodeOf(id, kind) {
+  return `РМУ:${String(DATA.order.indexOf(id) + 1).padStart(2, '0')}:${DATA.ops[id].ver}:${bits(id)}:${kind}`;
+}
+function updateFeedback() {
+  const on = !!(current && DATA.ops[current] && DATA.ops[current].ver);
+  document.querySelectorAll('#fb [data-fb], #fbHelp').forEach(b => { b.disabled = !on; });
+  if (!on) {
+    fbOp.textContent = ''; fbCode.textContent = '—';
+    fbNote.textContent = 'Оберіть свою операцію на схемі, позначте зроблене в чек-листі вгорі — і скопіюйте текст для чату Ради.';
+    return;
+  }
+  const b = bits(current), d = b.split('1').length - 1;
+  fbOp.textContent = '· ' + q(current);
+  fbNote.textContent = `Позначено ${words(d)} · усього ${words(b.length)}. Скопійований текст встав у чат Ради.`;
+  fbCode.textContent = fbCodeOf(current, d === b.length ? '+' : '~');
+}
+document.getElementById('fb').addEventListener('click', ev => {
+  const btn = ev.target.closest('[data-fb]'); if (!btn || !current) return;
+  const c = btn.dataset.fb, o = DATA.ops[current], b = bits(current), d = b.split('1').length - 1, all = d === b.length;
+  if (c === 'help' && !fbHelp.value.trim()) { fbHelp.focus(); return; }
+  const msg = o.blocks.flatMap(x => x.name === 'Повідомлення' ? (x.quote || []) : []).map(plain).join('\n');
+  const t = c === 'msg' ? msg + '\n' + fbCodeOf(current, all ? '+' : '~')
+    : c === 'state' ? `Стан ${q(current)}: позначено ${d} з ${b.length} пунктів.\n` + fbCodeOf(current, '~')
+    : `Потрібна допомога ${q(current)}: ${fbHelp.value.trim()}\n` + fbCodeOf(current, '!');
+  const label = btn.textContent;
+  // закриття з неповним чек-листом не блокується, але видно, що надсилається
+  const ok = c === 'msg' && !all ? `Скопійовано, але позначено ${d} з ${b.length}` : 'Скопійовано';
+  copyText(t).then(() => { btn.textContent = ok; setTimeout(() => { btn.textContent = label; }, 2500); }, () => {});
+});
+pB.addEventListener('change', ev => {
+  const b = ev.target; if (!b.dataset.k) return;
+  store.set(b.dataset.k, b.checked ? '1' : '0');
+  b.closest('.check').classList.toggle('done', b.checked);
+  updateProgress(current);
+  updateFeedback();
+});
+// запасний шлях — для файла, відкритого без сервера, де clipboard недоступний
+function copyText(t) {
+  try { return navigator.clipboard.writeText(t); } catch (e) {}
+  const a = document.createElement('textarea'); a.value = t; a.style.position = 'fixed'; a.style.opacity = '0';
+  document.body.appendChild(a); a.select();
+  const ok = document.execCommand('copy'); a.remove();
+  return ok ? Promise.resolve() : Promise.reject();
+}
+pB.addEventListener('click', ev => {
+  const btn = ev.target.closest('[data-copy]'); if (!btn) return;
+  ev.preventDefault();  // кнопка зразка стоїть усередині пункту: клік не перемикає галочку
+  const c = btn.dataset.copy;
+  const t = c === 'msg' ? document.getElementById('pMsg').innerText : c === 'q' ? btn.previousElementSibling.innerText : checklistText(current);
+  const label = btn.textContent;
+  copyText(t).then(() => { btn.textContent = 'Скопійовано'; setTimeout(() => { btn.textContent = label; }, 1500); }, () => {});
+});
+// з вкладки: якщо схему наближено, вона пливе до обраної операції
+const pick = id => { selectPanel(id); if (zoomed()) zoomTo(opView(id)); };
+pS.addEventListener('change', () => pick(pS.value));
+const step = d => {
+  const i = DATA.order.indexOf(current);
+  pick(DATA.order[i < 0 ? 0 : (i + d + DATA.order.length) % DATA.order.length]);
+};
+document.getElementById('pPrev').addEventListener('click', ev => { ev.stopPropagation(); step(-1); });
+document.getElementById('pNext').addEventListener('click', ev => { ev.stopPropagation(); step(1); });
+document.getElementById('panel').addEventListener('click', ev => ev.stopPropagation());
+
+// --- підказка й підсвічування
+let pinned = null, hideT = null, tipOn = true;
+const goal = document.getElementById('goal'), toggleBtn = document.getElementById('toggleTip');
+const GOAL_PH = '<span class="ph">Наведіть на точку — тут з’явиться ціль пункту.</span>';
+function setTipMode(on) {
+  tipOn = on;
+  toggleBtn.textContent = on ? 'Прибрати контекстне вікно' : 'Повернути контекстне вікно';
+  toggleBtn.setAttribute('aria-pressed', String(!on));
+  goal.classList.toggle('on', !on);
+  goal.innerHTML = GOAL_PH;
+  pinned = null; hide(true);
+  store.set('tipOn', on ? '1' : '0');
+}
+toggleBtn.addEventListener('click', ev => { ev.stopPropagation(); setTipMode(!tipOn); });
+
+function highlight(id, on) {
+  svg.classList.toggle('dim', on && !!id);
+  edges.forEach(e => {
+    const isIn = on && e.to === id, isOut = on && e.from === id;
+    e.p.classList.toggle('in', isIn);
+    e.p.classList.toggle('out', isOut);
+    e.p.setAttribute('marker-end', isIn ? 'url(#arrIn)' : isOut ? 'url(#arrOut)' : 'url(#arrEdge)');
+    if (isIn || isOut) gEdges.appendChild(e.p);
+  });
+  gDots.querySelectorAll('.dot').forEach(d => {
+    const did = d.dataset.id;
+    d.classList.toggle('rel', on && !!did && edges.some(e => (e.to === id && e.from === did) || (e.from === id && e.to === did)));
+  });
+}
+function show(g, html, id, brief) {
+  clearTimeout(hideT);
+  svg.querySelectorAll('.dot.active').forEach(d => d.classList.remove('active'));
+  g.classList.add('active');
+  highlight(id, true);
+  if (!tipOn) { goal.innerHTML = brief(); return; }
+  tip.innerHTML = html;
+  const pin = tip.querySelector('.pin'); if (pin) pin.textContent = pinned === g ? 'закріплено · Esc' : '';
+  placeTip(g);
+  tip.classList.add('on');
+}
+function placeTip(g) {
+  tipG = g;
+  const r = g.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  // у наближенні — під точкою, щоб сусідні лишалися видимими; інакше — збоку
+  if (zoomed() && g.dataset.id && r.bottom + 10 + th < innerHeight - 12) {
+    tip.style.left = Math.max(12, Math.min(r.left + r.width / 2 - tw / 2, innerWidth - tw - 12)) + 'px';
+    tip.style.top = r.bottom + 10 + 'px';
+    return;
+  }
+  let x = r.right + 14; if (x + tw > innerWidth - 12) x = r.left - tw - 14; if (x < 12) x = Math.max(12, (innerWidth - tw) / 2);
+  let y = r.top + r.height / 2 - 60; y = Math.max(12, Math.min(y, innerHeight - th - 12));
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hide(force) {
+  if (pinned && !force) return;
+  tip.classList.remove('on');
+  if (!tipOn) goal.innerHTML = GOAL_PH;
+  svg.querySelectorAll('.dot.active').forEach(d => d.classList.remove('active'));
+  highlight(null, false);
+}
+function bindTip(g, render, id, brief, select) {
+  if (id) g.dataset.id = id;
+  const open = () => { if (!pinned || pinned === g) show(g, render(), id, brief); };
+  g.addEventListener('mouseenter', open);
+  g.addEventListener('focus', () => { if (pinned && pinned !== g) pinned = null; show(g, render(), id, brief); });
+  g.addEventListener('mouseleave', () => { hideT = setTimeout(() => hide(), 220); });
+  g.addEventListener('blur', () => { if (!pinned) hide(); });
+  g.addEventListener('click', ev => {
+    ev.stopPropagation();
+    pinned = pinned === g ? null : g;
+    if (select) select();
+    show(g, render(), id, brief);
+  });
+  g.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); g.dispatchEvent(new MouseEvent('click')); } });
+}
+tip.addEventListener('mouseenter', () => clearTimeout(hideT));
+tip.addEventListener('mouseleave', () => { hideT = setTimeout(() => hide(), 220); });
+tip.addEventListener('click', ev => ev.stopPropagation());
+document.addEventListener('click', () => { pinned = null; hide(true); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { pinned = null; hide(true); if (zoomed()) zoomTo(HOME); } });
+// прокрутка: вікно йде за точкою; зникає, лише коли точка виходить за екран
+addEventListener('scroll', () => {
+  if (!tipOn || !tipG || !tip.classList.contains('on')) return;
+  const r = tipG.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) { pinned = null; hide(true); } else placeTip(tipG);
+}, { passive: true });
+
+setTipMode(store.get('tipOn') !== '0');
+// --- згортання вкладки: стан пам'ятає браузер; клік по точці розгортає
+const panel = document.getElementById('panel'), foldBtn = document.getElementById('fold');
+function setFolded(on) {
+  panel.classList.toggle('collapsed', on);
+  foldBtn.textContent = on ? 'Розгорнути ▾' : 'Згорнути ▴';
+  foldBtn.setAttribute('aria-expanded', String(!on));
+  store.set('folded', on ? '1' : '0');
+}
+foldBtn.addEventListener('click', () => setFolded(!panel.classList.contains('collapsed')));
+document.getElementById('tabName').addEventListener('click', () => setFolded(!panel.classList.contains('collapsed')));
+gDots.addEventListener('click', ev => { if (ev.target.closest('.dot')) setFolded(false); }, true);  // capture: точка зупиняє спливання
+setFolded(store.get('folded') === '1');
+// --- коротко / повністю: на старті лише короткий зміст, решта — за кнопкою
+const moreBtn = document.getElementById('more');
+function setBrief(on) {
+  panel.classList.toggle('brief', on);
+  moreBtn.textContent = on ? 'Показати чек-лист ▾' : 'Сховати чек-лист ▴';
+  moreBtn.setAttribute('aria-expanded', String(!on));
+  store.set('brief', on ? '1' : '0');
+}
+moreBtn.addEventListener('click', () => setBrief(!panel.classList.contains('brief')));
+setBrief(store.get('brief') !== '0');
+const savedOp = store.get('panelOp');
+selectPanel(DATA.ops[savedOp] ? savedOp : DATA.order[0]);
+showLane(laneFromHash());
+</script>
+</body>
+</html>
